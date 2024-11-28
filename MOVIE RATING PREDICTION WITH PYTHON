@@ -1,0 +1,140 @@
+{
+  "nbformat": 4,
+  "nbformat_minor": 0,
+  "metadata": {
+    "colab": {
+      "provenance": [],
+      "authorship_tag": "ABX9TyPSyT7hKCRpTFkDXknZTfUd",
+      "include_colab_link": true
+    },
+    "kernelspec": {
+      "name": "python3",
+      "display_name": "Python 3"
+    },
+    "language_info": {
+      "name": "python"
+    }
+  },
+  "cells": [
+    {
+      "cell_type": "markdown",
+      "metadata": {
+        "id": "view-in-github",
+        "colab_type": "text"
+      },
+      "source": [
+        "<a href=\"https://colab.research.google.com/github/adityaponnapalli05/CODESOFT/blob/main/MOVIE%20RATING%20PREDICTION%20WITH%20PYTHON\" target=\"_parent\"><img src=\"https://colab.research.google.com/assets/colab-badge.svg\" alt=\"Open In Colab\"/></a>"
+      ]
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "# New Section"
+      ],
+      "metadata": {
+        "id": "CO7DpMJXLTY7"
+      }
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "import pandas as pd\n",
+        "import numpy as np\n",
+        "from sklearn.model_selection import train_test_split\n",
+        "from sklearn.preprocessing import OneHotEncoder, StandardScaler\n",
+        "from sklearn.compose import ColumnTransformer\n",
+        "from sklearn.pipeline import Pipeline\n",
+        "from sklearn.ensemble import RandomForestRegressor\n",
+        "from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score\n",
+        "from joblib import dump\n",
+        "data = pd.read_csv(\"/IMDb Movies India.csv\", encoding=\"latin-1\")\n",
+        "print(\"Columns in the dataset:\", data.columns)\n",
+        "genre_column = \"Genre\"\n",
+        "director_column = \"Director\"\n",
+        "actor_column = \"Actor\"\n",
+        "budget_column = \"Budget\"\n",
+        "rating_column = \"Rating\"\n",
+        "\n",
+        "columns_to_check = [genre_column, director_column, actor_column, budget_column, rating_column]\n",
+        "available_columns = [col for col in columns_to_check if col in data.columns]\n",
+        "\n",
+        "if rating_column not in data.columns:\n",
+        "    raise ValueError(f\"Target column '{rating_column}' is missing from the dataset!\")\n",
+        "\n",
+        "data = data.dropna(subset=[rating_column])\n",
+        "\n",
+        "X = data[available_columns[:-1]]\n",
+        "y = data[rating_column]\n",
+        "\n",
+        "\n",
+        "if budget_column in X.columns:\n",
+        "    X[budget_column] = X[budget_column].fillna(X[budget_column].median())\n",
+        "\n",
+        "\n",
+        "X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)\n",
+        "\n",
+        "\n",
+        "categorical_features = [col for col in [genre_column, director_column, actor_column] if col in X_train.columns]\n",
+        "numeric_features = [budget_column] if budget_column in X_train.columns else []\n",
+        "\n",
+        "preprocessor = ColumnTransformer(\n",
+        "    transformers=[\n",
+        "        (\"cat\", OneHotEncoder(handle_unknown=\"ignore\"), categorical_features),\n",
+        "        (\"num\", StandardScaler(), numeric_features),\n",
+        "    ]\n",
+        ")\n",
+        "\n",
+        "model = Pipeline(steps=[\n",
+        "    (\"preprocessor\", preprocessor),\n",
+        "    (\"regressor\", RandomForestRegressor(n_estimators=100, random_state=42)),\n",
+        "])\n",
+        "\n",
+        "model.fit(X_train, y_train)\n",
+        "\n",
+        "y_pred = model.predict(X_test)\n",
+        "\n",
+        "mae = mean_absolute_error(y_test, y_pred)\n",
+        "mse = mean_squared_error(y_test, y_pred)\n",
+        "r2 = r2_score(y_test, y_pred)\n",
+        "\n",
+        "print(f\"MAE: {mae}\")\n",
+        "print(f\"MSE: {mse}\")\n",
+        "print(f\"R²: {r2}\")\n",
+        "\n",
+        "dump(model, \"movie_rating_model.joblib\")\n"
+      ],
+      "metadata": {
+        "colab": {
+          "base_uri": "https://localhost:8080/"
+        },
+        "id": "coj7hspoRRF1",
+        "outputId": "06808559-bcf3-42fe-e408-a208c984fb96"
+      },
+      "execution_count": null,
+      "outputs": [
+        {
+          "output_type": "stream",
+          "name": "stdout",
+          "text": [
+            "Columns in the dataset: Index(['Name', 'Year', 'Duration', 'Genre', 'Rating', 'Votes', 'Director',\n",
+            "       'Actor 1', 'Actor 2', 'Actor 3'],\n",
+            "      dtype='object')\n",
+            "MAE: 0.9991383763151253\n",
+            "MSE: 1.6404235774485898\n",
+            "R²: 0.11764630873217063\n"
+          ]
+        },
+        {
+          "output_type": "execute_result",
+          "data": {
+            "text/plain": [
+              "['movie_rating_model.joblib']"
+            ]
+          },
+          "metadata": {},
+          "execution_count": 18
+        }
+      ]
+    }
+  ]
+}
